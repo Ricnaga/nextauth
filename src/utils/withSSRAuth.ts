@@ -1,6 +1,7 @@
 import decode from 'jwt-decode'
 import { GetServerSideProps, GetServerSidePropsContext, GetServerSidePropsResult } from "next"
 import { destroyCookie, parseCookies } from "nookies"
+import { AuthTokenError } from '../services/error/AuthTokenError'
 import { validateUserPermissions } from './validateUserPermissions'
 
 type WithSSRAuthOptions = {
@@ -45,14 +46,17 @@ export function withSSRAuth<P>(fn: GetServerSideProps<P>, options?: WithSSRAuthO
     try {
       return await fn(ctx)
     } catch (err) {
-      destroyCookie(ctx, 'nextauth.token')
-      destroyCookie(ctx, 'nextauth.refreshToken')
+      if (err instanceof AuthTokenError) {
+        destroyCookie(ctx, 'nextauth.token')
+        destroyCookie(ctx, 'nextauth.refreshToken')
 
-      return {
-        redirect: {
-          destination: '/',
-          permanent: false
+        return {
+          redirect: {
+            destination: '/',
+            permanent: false
+          }
         }
+
       }
     }
   }
